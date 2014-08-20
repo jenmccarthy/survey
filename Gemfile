@@ -5,5 +5,5 @@ gem 'active_record_migrations'
 gem 'pg'
 gem 'rspec'
 gem 'shoulda-matchers'
-gem 'pry'
+gem 'pry', '~> 0.9.0'
 
