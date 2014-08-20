@@ -1,10 +1,10 @@
 require 'rspec'
-require 'shoulda-matchers'
 require 'active_record'
+require 'shoulda-matchers'
 
-require 'questions'
-require 'responses'
-require 'results'
+require 'question'
+require 'response'
+require 'result'
 require 'survey'
 
 database_configuration = YAML::load(File.open('db/config.yml'))

@@ -9,4 +9,6 @@ describe Question do
     test_question.surveys << test_survey2
     expect(test_question.surveys).to eq [test_survey1, test_survey2]
   end
+
+  it { should have_and_belong_to_many :responses }
 end
