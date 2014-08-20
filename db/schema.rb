@@ -11,33 +11,47 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140820165502) do
+ActiveRecord::Schema.define(version: 20140820180958) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "questions_tables", force: true do |t|
+  create_table "questions", force: true do |t|
     t.string   "question"
-    t.string   "type"
+    t.string   "kind"
     t.integer  "result_id"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  create_table "responses_tables", force: true do |t|
+  create_table "questions_surveys", force: true do |t|
+    t.integer  "survey_id"
+    t.integer  "question_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "responses", force: true do |t|
     t.string   "reponse"
     t.integer  "result_id"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  create_table "results_tables", force: true do |t|
+  create_table "responses_questions", force: true do |t|
+    t.integer  "response_id"
+    t.integer  "question_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "results", force: true do |t|
     t.string   "name"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  create_table "surveys_tables", force: true do |t|
+  create_table "surveys", force: true do |t|
     t.string   "name"
     t.datetime "created_at"
     t.datetime "updated_at"
