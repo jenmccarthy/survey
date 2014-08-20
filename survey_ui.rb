@@ -94,7 +94,7 @@ def create_questions
   end
     puts "Here are your questions so far:"
     Survey.all.last.questions.each { | question | puts "#{question.question}" }
-  puts "What would you like to do?"
+  puts "\nWhat would you like to do?"
   puts "[R] Add responses to this question"
   puts "[A] Add more questions to this survey"
   puts "[X] Return to main menu"
