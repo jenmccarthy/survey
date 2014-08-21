@@ -7,6 +7,8 @@ require 'pry'
 
 ActiveRecord::Base.establish_connection(YAML::load(File.open('./db/config.yml'))["development"])
 
+@user
+
 def welcome
   system 'clear'
   puts "Welcome to Survey Maker"
@@ -16,14 +18,50 @@ def welcome
   choice = gets.chomp
   case choice.upcase
   when 'M'
+    @user = "maker"
     maker_menu
   when 'T'
+    @user = "taker"
     taker_menu
   end
 end
 
-def maker_menu
+def taker_menu
   system 'clear'
+  puts "Taker Menu Choices"
+  puts "[C] Choose a survey to take"
+  puts "[X] Exit"
+  case gets.chomp.upcase
+  when "C"
+    take_survey
+  when "X"
+    puts "Adios!"
+  end
+end
+
+def take_survey
+  list_surveys
+  puts "Please choose a survey you would like to take"
+  survey_choice = gets.chomp.to_i - 1
+  current_survey = Survey.all[survey_choice]
+  current_survey.questions.each do |question|
+    puts "#{question.question}"
+    question.responses.each_with_index do |response, index|
+      puts "#{index + 1} #{response.response}"
+    end
+    if question.kind != 'other'
+      puts "Please choose the answer that best fits"
+      choice = gets.chomp.to_i - 1
+      #User.responses << question.responses[choice]
+    else
+      puts "Please enter your response"
+    end
+
+  end
+end
+
+def maker_menu
+  # system 'clear'
   puts "Maker Menu Choices"
   puts "[M] Make a new survey"
   puts "[L] List all surveys"
@@ -73,8 +111,13 @@ end
 
 def list_surveys
   puts "Here are all the surveys created so far:"
-  Survey.all.each { |survey| puts "#{survey.name}" }
+  Survey.all.each_with_index { |survey, index| puts "#{index + 1} #{survey.name}" }
   gets
+  if @user == "maker"
+    maker_menu
+  else
+    taker_menu
+  end
 end
 
 def create_questions
@@ -131,6 +174,8 @@ def create_responses
     create_questions
   when "R"
     create_responses
+  when "X"
+    maker_menu
   else
     invalid
     maker_menu

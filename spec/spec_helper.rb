@@ -6,6 +6,7 @@ require 'question'
 require 'response'
 require 'result'
 require 'survey'
+require 'choice'
 
 database_configuration = YAML::load(File.open('db/config.yml'))
 test_configuration = database_configuration['test']
@@ -16,6 +17,7 @@ RSpec.configure do |config|
     Survey.all.each { |survey| survey.destroy}
     Question.all.each { |question| question.destroy}
     Response.all.each { |response| response.destroy}
-    Result.all.each { |result| result.destroy}
+    Result.all.each { |result| result.destroy }
+    Choice.all.each { |choice| choice.destroy }
   end
 end
