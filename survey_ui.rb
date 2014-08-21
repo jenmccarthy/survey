@@ -3,18 +3,22 @@ require './lib/question'
 require './lib/response'
 require './lib/result'
 require './lib/survey'
+require './lib/choice'
 require 'pry'
 
 ActiveRecord::Base.establish_connection(YAML::load(File.open('./db/config.yml'))["development"])
 
 @user
+@current_survey
+@current_question
 
 def welcome
   system 'clear'
   puts "Welcome to Survey Maker"
   puts "Are you a maker or a taker?"
-  puts "M << Maker"
-  puts "T << Taker"
+  puts "[M] << Maker"
+  puts "[T] << Taker"
+  puts "[C] << Clear database!"
   choice = gets.chomp
   case choice.upcase
   when 'M'
@@ -23,48 +27,62 @@ def welcome
   when 'T'
     @user = "taker"
     taker_menu
+  when 'C'
+    defcon5
+    welcome
   end
 end
 
-def taker_menu
-  system 'clear'
-  puts "Taker Menu Choices"
-  puts "[C] Choose a survey to take"
-  puts "[X] Exit"
-  case gets.chomp.upcase
-  when "C"
-    take_survey
-  when "X"
-    puts "Adios!"
-  end
+def defcon5
+  Survey.all.each { |survey| survey.destroy}
+  Question.all.each { |question| question.destroy}
+  Response.all.each { |response| response.destroy}
+  Result.all.each { |result| result.destroy }
+  Choice.all.each { |choice| choice.destroy }
 end
 
-def take_survey
-  list_surveys
-  puts "Please choose a survey you would like to take"
-  survey_choice = gets.chomp.to_i - 1
-  current_survey = Survey.all[survey_choice]
-  current_survey.questions.each do |question|
-    puts "#{question.question}"
-    question.responses.each_with_index do |response, index|
-      puts "#{index + 1} #{response.response}"
-    end
-    if question.kind != 'other'
-      puts "Please choose the answer that best fits"
-      choice = gets.chomp.to_i - 1
-      #User.responses << question.responses[choice]
-    else
-      puts "Please enter your response"
-    end
+# def taker_menu
+#   system 'clear'
+#   puts "Taker Menu Choices"
+#   puts "[C] Choose a survey to take"
+#   puts "[X] Exit"
+#   case gets.chomp.upcase
+#   when "C"
+#     take_survey
+#   when "X"
+#     puts "Adios!"
+#   end
+# end
 
-  end
-end
+# def take_survey
+#   list_surveys
+#   puts "Please choose a survey you would like to take"
+#   survey_choice = gets.chomp.to_i - 1
+#   current_survey = Survey.all[survey_choice]
+#   new_result = Result.create({survey_id: current_survey.id})
+#   current_survey.questions.each do |question|
+#     if question.kind != 'other'
+#       puts "#{question.question}"
+#       question.responses.each_with_index do |response, index|
+#       # binding.pry
+#         puts "#{index + 1} #{response.response}"
+#       end
+#     puts "Please choose the answer that best fits"
+#     selection = gets.chomp.to_i - 1
+#     new_choice = Choice.create({question_id: question.id, response_id: question.responses[selection].id})
+#     new_result.choices << new_choice
+#     else
+#       puts "Please enter your response"
+#     end
+#   end
+# end
 
 def maker_menu
-  # system 'clear'
+  system 'clear'
   puts "Maker Menu Choices"
   puts "[M] Make a new survey"
   puts "[L] List all surveys"
+  puts "[E] Edit existing survey"
   puts "[Q] Create questions for a survey"
   puts "[R] Create responses for questions"
   case gets.chomp.upcase
@@ -72,6 +90,11 @@ def maker_menu
     new_survey
   when "L"
     list_surveys
+    puts "Press any key to continue"
+    gets
+    maker_menu
+  when "E"
+    edit_survey
   when "Q"
     create_questions
   when "R"
@@ -89,34 +112,59 @@ end
 
 def new_survey
   puts "Please enter the name of this survey:"
-  new_survey = Survey.create({name: gets.chomp})
-  if new_survey.valid?
+  @current_survey = Survey.create({name: gets.chomp})
+  if @current_survey.valid?
     puts "Your new survey has been created!"
     sleep 2
   else
     puts "You blew it! Here's why:"
-    new_survey.errors.full_messages.each { |message| puts message }
+    @current_survey.errors.full_messages.each { |message| puts message }
     sleep 2
   end
-    puts "What would you like to do?"
-    puts "[A] Add questions to this survey"
-    puts "[X] Return to main menu"
+  create_questions
+end
+
+def list_surveys
+  puts "\nHere are all the surveys created so far:"
+  Survey.all.each_with_index do |survey, index|
+    puts "#{index + 1}. #{survey.name.upcase} SURVEY!"
+    puts "Associated Questions:"
+    survey.questions.each_with_index do |question, index|
+      puts " #{index + 1}. #{question.question}"
+      question.responses.each_with_index do |response, index|
+        puts "  #{index + 1}. #{response.response}"
+      end
+    end
+  end
+end
+
+def edit_survey
+  list_surveys
+  puts "Which survey do you want to update/continue with?"
+  survey_choice = gets.chomp.to_i - 1
+  @current_survey = Survey.all[survey_choice]
+  puts "What would you like to do?"
+  puts "[A] Add questions to this survey"
+  puts "[E] Edit questions already part of this survey"
+  puts "[X] Exit this menu"
   case gets.chomp.upcase
   when "A"
     create_questions
-  else
+  when "E"
+    puts "Which question would you like to edit?"
+    list_questions
+    selection = gets.chomp.to_i - 1
+    @current_question = @current_survey.questions[selection]
+    create_responses
+  when "X"
     maker_menu
   end
 end
 
-def list_surveys
-  puts "Here are all the surveys created so far:"
-  Survey.all.each_with_index { |survey, index| puts "#{index + 1} #{survey.name}" }
-  gets
-  if @user == "maker"
-    maker_menu
-  else
-    taker_menu
+def list_questions
+  puts "Here are the questions for your current survey:"
+  @current_survey.questions.each_with_index do |question, index|
+    puts "#{index + 1} #{question.question}"
   end
 end
 
@@ -135,8 +183,8 @@ def create_questions
     new_question.errors.full_messages.each { |message| puts message }
     sleep 2
   end
-    puts "Here are your questions so far:"
-    Survey.all.last.questions.each { | question | puts "#{question.question}" }
+  puts "Here are your questions so far:"
+  Survey.all.last.questions.each { | question | puts "#{question.question}" }
   puts "\nWhat would you like to do?"
   puts "[R] Add responses to this question"
   puts "[A] Add more questions to this survey"
@@ -156,14 +204,29 @@ def create_responses
   current_question_kind = Question.all.last.kind
   if current_question_kind == 'multiple choice'
     puts "Please enter four different response choices for this question."
-    0.upto(3) { Question.all.last.responses << Response.create({response: gets.chomp}) }
+    0.upto(3) do
+      new_response = Response.create({response: gets.chomp})
+      Choice.create({question_id: Question.all.last.id, response_id: new_response.id})
+    end
   elsif current_question_kind == 'Y/N'
-    Question.all.last.responses << Response.create({response: 'Yes'})
-    Question.all.last.responses << Response.create({response: 'No'})
+    new_response = Response.create({response: 'Yes'})
+    new_response1 = Response.create({response: 'No'})
+    Choice.create({question_id: Question.all.last.id, response_id: new_response.id})
+    Choice.create({question_id: Question.all.last.id, response_id: new_response1.id})
   elsif current_question_kind == 'true/false'
-    Question.all.last.responses << Response.create({response: 'True'})
-    Question.all.last.responses << Response.create({response: 'False'})
+    new_response = Response.create({response: 'True'})
+    new_response1 = Response.create({response: 'False'})
+    Choice.create({question_id: Question.all.last.id, response_id: new_response.id})
+    Choice.create({question_id: Question.all.last.id, response_id: new_response1.id})
   end
+
+  #   0.upto(3) { Question.all.last.responses << Response.create({response: gets.chomp}) }
+  # elsif current_question_kind == 'Y/N'
+  #   Question.all.last.responses << Response.create({response: 'Yes'})
+  #   Question.all.last.responses << Response.create({response: 'No'})
+  # elsif current_question_kind == 'true/false'
+  #   Question.all.last.responses << Response.create({response: 'True'})
+  #   Question.all.last.responses << Response.create({response: 'False'})
   puts "Responses created!"
   sleep 2
   puts "What would you like to do?"

@@ -8,6 +8,8 @@ require 'result'
 require 'survey'
 require 'choice'
 
+I18n.enforce_available_locales = false
+
 database_configuration = YAML::load(File.open('db/config.yml'))
 test_configuration = database_configuration['test']
 ActiveRecord::Base.establish_connection(test_configuration)
